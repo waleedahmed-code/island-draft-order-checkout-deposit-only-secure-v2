@@ -90,3 +90,6 @@ https://island-draft-order-checkout-one.vercel.app/api/create-draft-order
 6. Confirm the checkout merchandise subtotal is exactly 50% of the verified configured total before tax and shipping.
 7. Confirm Shopify order details state that the remaining balance will be billed separately.
 8. Modify a request total in browser developer tools and confirm the backend rejects it with HTTP 409.
+
+
+Deployment trigger
