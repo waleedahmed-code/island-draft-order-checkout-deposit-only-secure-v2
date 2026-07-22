@@ -201,6 +201,47 @@ function getCustomAttributes(properties: Record<string, unknown> = {}) {
   }));
 }
 
+function getCheckoutCustomAttributes(params: {
+  properties: Record<string, unknown>;
+  fullOrderTotalCents: number;
+  depositAmountCents: number;
+  remainingBalanceCents: number;
+  currencyCode: string;
+}) {
+  const { properties, fullOrderTotalCents, depositAmountCents, remainingBalanceCents, currencyCode } = params;
+
+  const rows: Array<[string, string]> = [
+    ["PAYMENT PLAN", "50% deposit due today; remaining 50% billed separately"],
+    ["FULL ORDER TOTAL", formatMoney(fullOrderTotalCents, currencyCode)],
+    ["DUE TODAY — 50% DEPOSIT", formatMoney(depositAmountCents, currencyCode)],
+    ["REMAINING BALANCE — BILLED SEPARATELY", formatMoney(remainingBalanceCents, currencyCode)],
+    ["NEXT STEP", "Our team will contact you separately to collect the remaining balance."],
+  ];
+
+  const configurationKeys = [
+    "Orientation",
+    "Size",
+    "Finish",
+    "Stain",
+    "Benjamin Moore Paint Colour",
+    "Cabinet Size",
+    "Left Cabinet",
+    "Right Cabinet",
+    "Crown",
+    "Lights",
+    "Door Style",
+    "Mattress",
+    "Customization Breakdown",
+  ];
+
+  for (const key of configurationKeys) {
+    const value = propertyValue(properties, key);
+    if (value) rows.push([key, value]);
+  }
+
+  return rows.map(([key, value]) => ({ key, value }));
+}
+
 function moneyFromCents(cents: number, currencyCode: string) {
   return { amount: (cents / 100).toFixed(2), currencyCode };
 }
@@ -596,7 +637,13 @@ export async function POST(req: Request) {
         variantId,
         quantity,
         priceOverride: moneyFromCents(expectedDepositCents, currencyCode),
-        customAttributes: getCustomAttributes(verifiedProperties),
+        customAttributes: getCheckoutCustomAttributes({
+          properties: verifiedProperties,
+          fullOrderTotalCents: verified.fullOrderTotalCents,
+          depositAmountCents: expectedDepositCents,
+          remainingBalanceCents: expectedRemainingCents,
+          currencyCode,
+        }),
       },
     ];
 
@@ -629,6 +676,14 @@ export async function POST(req: Request) {
           lineItems,
           presentmentCurrencyCode: currencyCode,
           note,
+          customAttributes: getCustomAttributes({
+            "Payment Plan": "50% deposit online / remaining balance billed separately",
+            "Full Configured Order Total": formatMoney(verified.fullOrderTotalCents, currencyCode),
+            "50% Deposit Due at Checkout": formatMoney(expectedDepositCents, currencyCode),
+            "Remaining Balance To Be Billed Separately": formatMoney(expectedRemainingCents, currencyCode),
+            "Pricing Verification": "Server verified from Shopify variant and selected options",
+            "Pricing Schema": PRICING_SCHEMA_VERSION,
+          }),
           tags: [
             "murphy-bed",
             "50-percent-deposit-checkout",
