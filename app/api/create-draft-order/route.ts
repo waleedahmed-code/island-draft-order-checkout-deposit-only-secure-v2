@@ -211,11 +211,11 @@ function getCheckoutCustomAttributes(params: {
   const { properties, fullOrderTotalCents, depositAmountCents, remainingBalanceCents, currencyCode } = params;
 
   const rows: Array<[string, string]> = [
-    ["PAYMENT PLAN", "50% deposit due today; remaining 50% billed separately"],
+    ["PAYMENT PLAN", "50% deposit due today; remaining 50% due after professional installation"],
     ["FULL ORDER TOTAL", formatMoney(fullOrderTotalCents, currencyCode)],
     ["DUE TODAY — 50% DEPOSIT", formatMoney(depositAmountCents, currencyCode)],
-    ["REMAINING BALANCE — BILLED SEPARATELY", formatMoney(remainingBalanceCents, currencyCode)],
-    ["NEXT STEP", "Our team will contact you separately to collect the remaining balance."],
+    ["REMAINING 50% — DUE AFTER PROFESSIONAL INSTALLATION", formatMoney(remainingBalanceCents, currencyCode)],
+    ["NEXT STEP", "After professional installation is completed, our team will contact you to collect the remaining 50%. No automatic charge will be made."],
   ];
 
   const configurationKeys = [
@@ -624,12 +624,12 @@ export async function POST(req: Request) {
       "Pricing Schema": PRICING_SCHEMA_VERSION,
       "Full Configured Order Total": formatMoney(verified.fullOrderTotalCents, currencyCode),
       "50% Deposit Due at Checkout": formatMoney(expectedDepositCents, currencyCode),
-      "Remaining Balance To Be Billed Separately": formatMoney(
+      "Remaining Balance Due After Professional Installation": formatMoney(
         expectedRemainingCents,
         currencyCode
       ),
       "Payment Status": "Deposit checkout created — payment not yet confirmed",
-      "Manual Balance Billing Required": "Yes",
+      "Balance Collection": "Remaining 50% collected manually after professional installation",
     };
 
     const lineItems = [
@@ -665,8 +665,8 @@ export async function POST(req: Request) {
       "50% Murphy Bed deposit checkout created; payment is not confirmed until Shopify marks the order paid.",
       `Full configured order total: ${formatMoney(verified.fullOrderTotalCents, currencyCode)}.`,
       `Due at this checkout: ${formatMoney(expectedDepositCents, currencyCode)}.`,
-      `Remaining balance to be billed separately by Island Murphy Beds: ${formatMoney(expectedRemainingCents, currencyCode)}.`,
-      "No automatic second invoice is scheduled by this backend.",
+      `Remaining 50% due after professional installation: ${formatMoney(expectedRemainingCents, currencyCode)}.`,
+      "No automatic second charge or invoice is scheduled by this backend. Island Murphy Beds will collect the remaining balance after professional installation.",
     ].join(" ");
 
     const operation = await executeShopifyOperation<any>({
@@ -677,18 +677,18 @@ export async function POST(req: Request) {
           presentmentCurrencyCode: currencyCode,
           note,
           customAttributes: getCustomAttributes({
-            "Payment Plan": "50% deposit online / remaining balance billed separately",
+            "Payment Plan": "50% deposit online / remaining 50% due after professional installation",
             "Full Configured Order Total": formatMoney(verified.fullOrderTotalCents, currencyCode),
             "50% Deposit Due at Checkout": formatMoney(expectedDepositCents, currencyCode),
-            "Remaining Balance To Be Billed Separately": formatMoney(expectedRemainingCents, currencyCode),
+            "Remaining Balance Due After Professional Installation": formatMoney(expectedRemainingCents, currencyCode),
             "Pricing Verification": "Server verified from Shopify variant and selected options",
             "Pricing Schema": PRICING_SCHEMA_VERSION,
           }),
           tags: [
             "murphy-bed",
             "50-percent-deposit-checkout",
-            "remaining-50-manual-billing",
-            "manual-balance-required",
+            "remaining-50-after-installation",
+            "balance-due-after-installation",
             "server-price-verified",
           ],
         },
